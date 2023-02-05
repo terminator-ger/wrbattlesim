@@ -18,11 +18,11 @@ class UnitWidget(toga.Box):
 
         self.btn_up   = toga.Button('+', 
                                     on_press=self.incr, 
-                                    style=Pack(flex=0.15))
+                                    style=Pack(flex=0.4))
 
         self.btn_down = toga.Button('-', 
                                     on_press=self.decr, 
-                                    style=Pack(flex=0.15))
+                                    style=Pack(flex=0.4))
 
 
         self.stance = toga.Selection(items=self.stance_desc)
@@ -44,14 +44,14 @@ class UnitWidget(toga.Box):
     
     def reset(self):
         self.count = 0
-        self.counter.text = self.count
+        self.counter.text = str(self.count)
 
     def incr(self, ref):
         self.count += 1
-        self.counter.text = self.count
+        self.counter.text = str(self.count)
 
     def decr(self, ref):
         if self.count > 0:
             self.count -= 1
-        self.counter.text = self.count
+        self.counter.text = str(self.count)
 

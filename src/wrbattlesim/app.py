@@ -36,10 +36,6 @@ class WarRoomBattleSim(toga.App):
 
         self.config = wr20_vaniilla_options
 
-        #self.q_in = ap.AioSimpleQueue()
-        #self.q_out = ap.AioSimpleQueue()
-        #self.q_in = mp.SimpleQueue()
-        #self.q_out= mp.SimpleQueue()
         self.q_in = Queue()
         self.q_out= Queue()
 
@@ -65,40 +61,51 @@ class WarRoomBattleSim(toga.App):
         We then create a main window (with a name matching the app), and
         show the main window.
         """
+
+        # Switches
         self.battle_switch = toga.widgets.switch.Switch('Land Battle',  
                                                         value=False, 
-                                                        on_change=self.switch_battle_type,
-                                                        style=Pack(flex=0.1))
+                                                        on_change=self.switch_battle_type)#,
+                                                        #style=Pack(flex=0.5))
 
         self.batch_cap_switch = toga.widgets.switch.Switch('Batchcap Disabled',  
                                                         value=False, 
-                                                        on_change=self.switch_batch_cap,
-                                                        style=Pack(flex=0.1))
-        self.ctrl = toga.Box(style=Pack(direction=ROW), 
+                                                        on_change=self.switch_batch_cap)#,
+                                                        #style=Pack(flex=0.5))
+        self.ctrl = toga.Box(style=Pack(direction=COLUMN), 
                              children = [self.battle_switch, self.batch_cap_switch])
 
+        # Units
         self.land = LandBattle() 
         self.sea = SeaBattle() 
-
-        self.calc_btn = toga.Button("Calculate",
-                                 on_press=self.calc,
-                                 style=Pack(flex=0.1))
-
-
         self.units_box = toga.Box(style=Pack(flex=0.8), children=[self.land])        
-        #self.units_box_scroll = toga.ScrollContainer(content=self.units_box)
         self.units_box_scroll = toga.Box(children=[self.units_box])
+
+        # Calc btn
+        self.calc_btn = toga.Button("Calculate",
+                                 on_press=self.calc)
+                                 #style=Pack(flex=0.1))
+
+
         self.spinner = toga.ProgressBar(max=None, running=False)
 
 
-        self.ui_upper = toga.Box(children=[self.ctrl, self.units_box_scroll, self.calc_btn, self.spinner],
-                                    style=Pack(direction=COLUMN, flex=0.5))
 
-
-        self.results = toga.Label("Battle Results")
-        self.battle_results = toga.Box(children=[self.results],
-                                        style=Pack(flex=0.5))
+        self.results = toga.Label("Battle Results", style=Pack(font_family='monospace'))
+        self.battle_results = toga.ScrollContainer(content=self.results, style=Pack(flex=0.5))
+        #self.battle_results = toga.Box(children=[self.results],
+        #                                style=Pack(flex=0.5))
         #self.ui_lower = toga.ScrollContainer(style=Pack(flex=0.5), content=self.battle_results) 
+
+
+        self.ui_upper = toga.ScrollContainer(content=toga.Box(children=[self.ctrl,
+                                                            self.units_box_scroll, 
+                                                            self.calc_btn],#, self.spinner],
+                                                                    style=Pack(direction=COLUMN)),
+                                                    horizontal = True,
+                                                    vertical = False,
+                                                    style=Pack(flex=0.5))
+                
         self.ui_lower = toga.Box(style=Pack(flex=0.5), children=[self.battle_results]) 
 
         self.main_box = toga.Box(children=[self.ui_upper, self.ui_lower],
@@ -138,6 +145,7 @@ class WarRoomBattleSim(toga.App):
             btn.text = 'Land Battle'
             self.units_box.remove(self.sea)
             self.units_box.add(self.land)
+        self.main_box.refresh()
  
     def get_sea(self, battle, army:str):
         return [battle.units[army]['sea'][0].get_value(),
@@ -236,7 +244,6 @@ class WarRoomBattleSim(toga.App):
                                 ARMIES['A'],
                                 ARMIES['B']])
 
-        print('msg')
         #msg = await self.q_in.coro_get()
 
         #print('blubb')
@@ -256,15 +263,15 @@ class WarRoomBattleSim(toga.App):
 
     def eval(self, app):
         while True:
-            print('sleep')
             if self.q_in.empty():
                 yield 1
             else:
                 msg = self.q_in.get()
                 print('finished simulation')
-                self.battle_results.remove(self.results)
-                self.results = toga.Label(msg, style=Pack(font_family='monospace'))
-                self.battle_results.add(self.results)
+                #self.battle_results.remove(self.results)
+                self.results.text = msg
+                #self.battle_results.add(self.results)
+
                 yield 1
 
 

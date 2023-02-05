@@ -8,7 +8,7 @@ from wrbattlesim.UnitWidget import UnitWidget
 
 class Battle(toga.Box):
     def __init__(self):
-        toga.Box.__init__(self, style=Pack(direction=COLUMN))
+        super().__init__(self, style=Pack(direction=COLUMN))
 
         self.N_UNIT_TYPES = 5
         self.N_UNITS_GROUND = 3
@@ -23,11 +23,12 @@ class Battle(toga.Box):
 
 
     def add_units(self, T:str):
+        '''
         self.add(toga.Box(style=Pack(direction=ROW, flex=self.flex),
-                            children=[toga.Box(style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                                        toga.Label("A", style=Pack(flex=self.col_weights[1], background_color=RED)),
-                                        toga.Label("B", style=Pack(flex=self.col_weights[2], background_color=BLUE))]))
-
+                            children=[toga.Label("",style=Pack(flex=self.col_weights[0])),
+                                      toga.Label("A", style=Pack(flex=self.col_weights[1], background_color=RED)),
+                                      toga.Label("B", style=Pack(flex=self.col_weights[2], background_color=BLUE))]))
+        '''
 
 
         for n in range(self.N_UNIT_TYPES):
