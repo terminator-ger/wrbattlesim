@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Briefcase-Version: 0.3.12
+Name: wrbattlesim
+Formal-Name: WRBattleSim
+App-ID: com.example.wrbattlesim
+Version: 0.0.1
+Home-page: https://example.com/wrbattlesim
+Download-URL: https://example.com/wrbattlesim
+Author: Michael Lechner
+Author-email: wrdice@theterminator.e4ward.com
+Summary: My first application
