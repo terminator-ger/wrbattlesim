@@ -56,22 +56,22 @@ class LandBattle(Battle):
 
         self.col_weights = [0.2, 0.4, 0.4]
         # inf 
-        self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Defensive', 'Offensive']))
-        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive']))
+        self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Defensive', 'Offensive'], padding_right=25))
+        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive'], padding_bottom=5))
         # ART
-        self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Anti-Air', 'Ground']))
-        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Ground']))
+        self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Anti-Air', 'Ground'], padding_right=25))
+        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Ground'], padding_bottom=5))
          # ARM
-        self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Defensive', 'Offensive']))
-        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive']))
+        self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Defensive', 'Offensive'], padding_right=25))
+        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive'], padding_bottom=5))
         
         # Fighter                                                       
-        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air', 'Ground']))
-        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air', 'Ground']))
+        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air', 'Ground'], padding_right=25))
+        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air', 'Ground'], padding_bottom=5))
 
         # Bomber
-        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air/Ground', 'Strategic']))
-        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air/Ground', 'Strategic']))
+        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air/Ground', 'Strategic'], padding_right=25))
+        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air/Ground', 'Strategic'], padding_bottom=5))
 
 
 
@@ -97,21 +97,21 @@ class SeaBattle(Battle):
         self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['-']))
         self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['-']))
         # Cruiser
-        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Escort', 'Offensive']))
-        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Escort', 'Offensive']))
+        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Escort', 'Offensive'], padding_right=25))
+        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Escort', 'Offensive'], padding_bottom=5))
          # carrier
-        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Anti-Air', 'Offensive']))
-        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Offensive']))
+        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Anti-Air', 'Offensive'], padding_right=25))
+        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Offensive'], padding_bottom=5))
         #batttleship
-        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Anti-Air', 'Offensive']))
-        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Offensive']))
+        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Anti-Air', 'Offensive'], padding_right=25))
+        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Offensive'], padding_bottom=5))
         # Fighter                                                       
-        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air', 'Ground']))
-        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air', 'Ground']))
+        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air', 'Ground'], padding_right=25))
+        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air', 'Ground'], padding_bottom=5))
 
         # Bomber
-        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air/Ground', 'Strategic']))
-        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air/Ground', 'Strategic']))
+        self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air/Ground', 'Strategic'],padding_right=25))
+        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air/Ground', 'Strategic'], padding_bottom=5))
 
 
         self.labels = [toga.ImageView(toga.Image('./resources/yellow_sea.jpg'),style=Pack(flex=self.col_weights[0], width=50, height=50)),
