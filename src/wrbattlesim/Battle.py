@@ -5,6 +5,7 @@ from toga.style.pack import COLUMN, ROW
 from toga.constants import BLUE, RED
 
 from wrbattlesim.UnitWidget import UnitWidget
+from wrbattlesim.config import *
 
 class Battle(toga.Box):
     def __init__(self):
@@ -34,14 +35,16 @@ class Battle(toga.Box):
         for n in range(self.N_UNIT_TYPES):
             if n < self.N_UNITS_GROUND:
                 self.add(toga.Box(style=Pack(direction=ROW, 
-                                             flex=self.flex),
+                                             flex=self.flex,
+                                             height=ROW_HEIGHT),
                                     children = [self.labels[n], 
                                                 self.units['A'][T][n], 
                                                 self.units['B'][T][n]]))
 
             else:
                 self.add(toga.Box(style=Pack(direction=ROW, 
-                                                flex=self.flex),
+                                                flex=self.flex, 
+                                                height=ROW_HEIGHT),
                                     children = [self.labels[n],
                                                 self.units['A']['air'][n-self.N_UNITS_GROUND], 
                                                 self.units['B']['air'][n-self.N_UNITS_GROUND]]))
@@ -57,13 +60,13 @@ class LandBattle(Battle):
         self.col_weights = [0.2, 0.4, 0.4]
         # inf 
         self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Defensive', 'Offensive'], padding_right=25))
-        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive'], padding_bottom=5))
+        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive'], padding_bottom=0))
         # ART
         self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Anti-Air', 'Ground'], padding_right=25))
-        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Ground'], padding_bottom=5))
+        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Anti-Air', 'Ground'], padding_bottom=0))
          # ARM
         self.units['A']['land'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Defensive', 'Offensive'], padding_right=25))
-        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive'], padding_bottom=5))
+        self.units['B']['land'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Defensive', 'Offensive'], padding_bottom=0))
         
         # Fighter                                                       
         self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air', 'Ground'], padding_right=25))
@@ -71,15 +74,15 @@ class LandBattle(Battle):
 
         # Bomber
         self.units['A']['air'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Air/Ground', 'Strategic'], padding_right=25))
-        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air/Ground', 'Strategic'], padding_bottom=5))
+        self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air/Ground', 'Strategic'], padding_bottom=0))
 
 
 
-        self.labels = [toga.ImageView(toga.Image('./resources/yellow_ground.jpg'),style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/blue_ground.jpg')  ,style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/green_ground.jpg') ,style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/green_air.jpg')    ,style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/red_air.jpg')      ,style=Pack(flex=self.col_weights[0], width=50, height=50))]
+        self.labels = [toga.ImageView(toga.Image('./resources/yellow_ground.jpg'),style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/blue_ground.jpg')  ,style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/green_ground.jpg') ,style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/green_air.jpg')    ,style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/red_air.jpg')      ,style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT))]
 
         self.add_units(T='land')
 
@@ -114,12 +117,12 @@ class SeaBattle(Battle):
         self.units['B']['air'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Air/Ground', 'Strategic'], padding_bottom=5))
 
 
-        self.labels = [toga.ImageView(toga.Image('./resources/yellow_sea.jpg'),style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/blue_sea.jpg'),  style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/green_sea.jpg'), style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/red_sea.jpg'),   style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/green_air.jpg'), style=Pack(flex=self.col_weights[0], width=50, height=50)),
-                       toga.ImageView(toga.Image('./resources/red_air.jpg'),   style=Pack(flex=self.col_weights[0], width=50, height=50))]
+        self.labels = [toga.ImageView(toga.Image('./resources/yellow_sea.jpg'),style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/blue_sea.jpg'),  style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/green_sea.jpg'), style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/red_sea.jpg'),   style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/green_air.jpg'), style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT)),
+                       toga.ImageView(toga.Image('./resources/red_air.jpg'),   style=Pack(flex=self.col_weights[0], width=50, height=ROW_HEIGHT))]
         
         self.add_units(T='sea')
 

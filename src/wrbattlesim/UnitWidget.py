@@ -5,33 +5,45 @@ from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
 from toga.constants import BLUE, RED
 
-
+from wrbattlesim.config import ROW_HEIGHT, BTN_SIZE
 
 class UnitWidget(toga.Box):
     def __init__(self, flex, color=None, stance_desc=['Defensive', 'Offensive'], padding_bottom=0, padding_right=0):
-        toga.Box.__init__(self, style=Pack(direction=COLUMN, flex=flex, padding_left=15, padding_right=padding_right, padding_bottom=padding_bottom))
+        toga.Box.__init__(self, style=Pack(direction=COLUMN, 
+                                            flex=flex, 
+                                            height=ROW_HEIGHT,
+                                            padding_left=5, 
+                                            padding_right=padding_right, 
+                                            padding_bottom=padding_bottom))
 
         self.stance_desc = stance_desc
         self.count = 0                                                
-        self.counter = toga.Label('0', style=Pack(width=20, height=25, padding_left=15, padding_right=5))
+        self.counter = toga.Label('0', style=Pack(width=20, 
+                                                    height=ROW_HEIGHT//2, 
+                                                    padding_left=10, 
+                                                    padding_top=10))
 
         self.btn_up   = toga.Button('+', 
                                     on_press=self.incr, 
-                                    style=Pack( width=50, height=25,))
+                                    style=Pack(width=BTN_SIZE, 
+                                              height=BTN_SIZE,))
 
         self.btn_down = toga.Button('-', 
                                     on_press=self.decr, 
-                                    style=Pack(width=50, height=25,))
-        self.btn_reset = toga.Button('0', 
-                                    on_press=self.reset, 
-                                    style=Pack(width=30, height=25,))
+                                    style=Pack(width=BTN_SIZE, 
+                                              height=BTN_SIZE,))
+        #self.btn_reset = toga.Button('0', 
+        #                            on_press=self.reset, 
+        #                            style=Pack(width=30, height=ROW_HEIGHT//2,))
 
-
-
-        self.stance = toga.Selection(items=self.stance_desc, style=Pack(width=120, height=25))
+        self.stance = toga.Selection(items=self.stance_desc, 
+                                        style=Pack(width=140, 
+                                                    height=ROW_HEIGHT//2))
 
         self.box_btn = toga.Box(children=[self.btn_down, self.counter, self.btn_up],#, self.btn_reset],
-                                    style=Pack(direction=ROW, height=25, width=120)) 
+                                    style=Pack(direction=ROW, 
+                                                height=ROW_HEIGHT//2, 
+                                                width=100)) 
         #self.box_stance = toga.Box(children=[self.stance],
         #                            style=Pack(direction=ROW, height=25, width=120))
 
@@ -47,9 +59,12 @@ class UnitWidget(toga.Box):
         return self.count
     
     def get_stance(self):
-        return np.argwhere(self.stance.value == self.stance_desc)
+        for i, val in enumerate(self.stance_desc):
+            if self.stance.value == val:
+                return i
+        
     
-    def reset(self, ref):
+    def reset(self, ref=None):
         self.count = 0
         self.counter.text = str(self.count)
 
