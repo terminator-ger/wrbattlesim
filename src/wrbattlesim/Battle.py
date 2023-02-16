@@ -97,8 +97,8 @@ class SeaBattle(Battle):
         self.col_weights = [0.2, 0.4, 0.4]
 
         #sub
-        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['-']))
-        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['-']))
+        self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['-'], padding_right=25))
+        self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['-'], padding_bottom=5))
         # Cruiser
         self.units['A']['sea'].append(UnitWidget(flex=self.col_weights[1], stance_desc=['Escort', 'Offensive'], padding_right=25))
         self.units['B']['sea'].append(UnitWidget(flex=self.col_weights[2], stance_desc=['Escort', 'Offensive'], padding_bottom=5))
