@@ -36,10 +36,11 @@ class WarRoomBattleSim(toga.App):
         super(WarRoomBattleSim, self).__init__()
 
         self.config = wr20_vaniilla_options
+        self.todo = None
 
-        self.q_in = Queue()
-        self.q_out= Queue()
-        self.q_int= Queue()
+        #self.q_in = Queue()
+        #self.q_out= Queue()
+        #self.q_int= Queue()
 
         '''
         self.sim_proc = ap.AioProcess(target=start_sim, 
@@ -47,14 +48,15 @@ class WarRoomBattleSim(toga.App):
                                               self.q_in))
         '''
 
-        self.sim_proc = threading.Thread(target=start_sim,
-                                        args=(self.q_out, 
-                                              self.q_in, 
-                                              self.q_int))
-        self.sim_proc.start()
+        #self.sim_proc = threading.Thread(target=start_sim,
+        #                                args=(self.q_out, 
+        #                                      self.q_in, 
+        #                                      self.q_int))
+        #self.sim_proc.start()
 
-        self.add_background_task(self.eval) 
-        self.on_exit = self.join_on_exit
+        self.sim = Simulate(army_a=None, army_b=None)
+
+        self.on_exit = ()#self.join_on_exit
         self.is_calculating = False
 
     def startup(self):
@@ -91,7 +93,7 @@ class WarRoomBattleSim(toga.App):
                                  #style=Pack(flex=0.1))
 
 
-        self.spinner = toga.ProgressBar(max=None, running=False)
+        self.spinner = toga.ProgressBar(max=100, running=False)
 
 
 
@@ -152,6 +154,11 @@ class WarRoomBattleSim(toga.App):
             btn.text = 'Land Battle'
             self.units_box.remove(self.sea)
             self.units_box.add(self.land)
+        self.units_box.refresh()
+        self.ui_upper.refresh()
+        self.ui_upper.refresh_sublayouts()
+        self.units_box_scroll.refresh_sublayouts()
+        self.units_box_scroll.refresh()
         self.main_box.refresh()
         self.main_box.refresh_sublayouts()
  
@@ -219,7 +226,7 @@ class WarRoomBattleSim(toga.App):
         print(f'Stances for {army} - {type} : {stances_def}{stances_off}')
         return [stances_def, stances_off]
 
-    async def calc(self, btn):
+    def calc(self, btn):
         NO_UNIT = [0,0,0,0,0]
         ALL_UNITS = [-1,-1,-1,-1,-1]
 
@@ -250,31 +257,41 @@ class WarRoomBattleSim(toga.App):
         unit_count_a = np.array([ARMIES['A'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
         unit_count_b = np.array([ARMIES['B'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
 
+        self.spinner.start()
         if unit_count_a > 0 and unit_count_b > 0:
-            self.q_out.put([CombatSystem.WarRoomV2,
-                                self.config,
-                                ARMIES['A'],
-                                ARMIES['B']])
+            self.add_background_task(Simulate(ARMIES['A'], 
+                                              ARMIES['B'],
+                                              self.config,
+                                              CombatSystem.WarRoomV2).run_cb) 
 
-            if not self.spinner.is_running:
-                self.spinner.start()
-                print('start')
-
-        #msg = await self.q_in.coro_get()
-
-        #print('blubb')
-
-        #if msg:
-        #    self.tasks.task_done()
-        #    print('finished simulation')
-        #    self.battle_results.remove(self.results)
-        #    self.results = toga.Label(msg, style=Pack(font_family='monospace'))
-        #    self.battle_results.add(self.results)
 
     def join_on_exit(self, handle):
-        self.q_out.put('EXIT')
-        self.sim_proc.join()
         sys.exit()
+
+
+    def battle_loop(self, app):
+        while True:
+            if self.todo is not None:
+                ret = True
+                while ret:
+                    print('new battle')
+                    ARMIES = self.todo
+                    ret, p = asyncio.run(self.sim.run_async(combat_system=CombatSystem.WarRoomV2,
+                                        config=self.config,
+                                        armyA=ARMIES['A'],
+                                        armyB=ARMIES['B']))
+                    print(p)
+                    self.spinner.value = p
+                    if ret:
+                        self.spinner.start()
+                    else:
+                        self.spinner.stop()
+
+                    self.todo = None
+                    yield 0.01
+            yield 0.1
+
+
 
     def eval(self, app):
         while True:
@@ -283,7 +300,7 @@ class WarRoomBattleSim(toga.App):
                     msg = self.q_int.get()
                     if self.is_calculating:
                         self.results.text = msg
-                yield 1
+                yield 0.1
             else:
                 msg = self.q_in.get()
                 print('finished simulation')
@@ -292,10 +309,9 @@ class WarRoomBattleSim(toga.App):
                 self.results.text = msg
                 self.spinner.stop()
                 self.spinner.refresh()
-                print('stop')
                 #self.battle_results.add(self.results)
 
-                yield 1
+                yield 0.1
 
 
 def main():
