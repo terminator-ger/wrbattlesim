@@ -37,7 +37,6 @@ jobs:
     - name: Build Windows
       run: |
         briefcase package
-              - uses: actions/checkout@v2.1.0
     - uses: jitterbit/get-changed-files@v1
       id: abc
       with:
