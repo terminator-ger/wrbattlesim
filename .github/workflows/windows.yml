@@ -37,35 +37,16 @@ jobs:
     - name: Build Windows
       run: |
         briefcase package
-    - uses: jitterbit/get-changed-files@v1
-      id: abc
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.1
       with:
-          format: space-delimited
-          token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Printing
-      run: |
-          echo "Added:"
-          echo "${{ steps.abc.outputs.added }}"
-          echo "Removed:"
-          echo "${{ steps.abc.outputs.removed }}"
-          echo "Renamed:"
-          echo "${{ steps.abc.outputs.renamed }}"
-          echo "Modified:"
-          echo "${{ steps.abc.outputs.modified }}"
-          echo "Added+Modified:"
-          echo "${{ steps.abc.outputs.added_modified }}"
-    - name: List Files
-      id: list-files
-      uses: mirko-felice/list-files-action@v3.0.1
+        type: 'zip'
+        filename: 'wrbattlesim.zip'
+        directory: './windows/app/WRBattleSim/src'
+    - name: Upload Release
+      uses: ncipollo/release-action@v1.12.0
       with:
-          repo: ${{ github.repository }}
-          ref: ${{ github.ref }}
-          path: "."
-          ext: ".msi"
-    - name: Publish Windows
-      uses: actions/upload-artifact@v3
-      with:
-        name: Windows
-        path: 
+        artifacts: "wrbattlesim.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
       
 
