@@ -113,14 +113,15 @@ class WarRoomBattleSim(toga.App):
                                                 
         self.chart = toga_chart.Chart(style=Pack(flex=1),
                                         on_draw=self.draw_chart) 
+        self.chart.MIN_HEIGHT=200
 
-        self.battle_results = toga.ScrollContainer(content=self.chart, 
-                                                    style=Pack(flex=0.5))
-        self.battle_results.MIN_HEIGHT = 200
+        #self.battle_results = toga.ScrollContainer(content=self.chart, 
+        #                                            style=Pack(flex=0.5))
+        #self.battle_results.MIN_HEIGHT = 200
         self.ui_lower = toga.Box(style=Pack(direction=COLUMN, flex=0.5), 
                                     children=[self.spinner, 
                                                 self.calc_btn, 
-                                                self.battle_results])
+                                                self.chart])
 
 
         self.main_box = toga.Box(children=[self.ui_upper, self.ui_lower],
@@ -136,38 +137,10 @@ class WarRoomBattleSim(toga.App):
             self.chart.redraw()
             yield 1
 
-    def unit_plot(self, ax, units, units_air):
-        color = ['#f1c615', '#4c74ed', '#3fa750', '#d72c32', 'white']
-        for i, (x, y) in enumerate(units):
-            if i < 4:
-                ax.plot(x,y, color=color[i])
-                d = np.zeros(len(y))
-                ax.fill_between(x, y, 
-                                where=y>=d, 
-                                interpolate=True, 
-                                color=color[i],
-                                alpha=0.5)
-        #ax.get_xaxis().set_ticks(np.arange(max(x), dtype=int))
-            #if i < 4:
-            #    for xx,yy in zip(x,y):
-            #        print(f"{x} {y} {i}")
-            #        ax.bar(xx,yy, color=color[i], width=0.2)
-
-        #for i, (x, y) in enumerate(units_air):
-        #    for xx,yy in zip(x,y):
-        #        ax.bar(xx+3,yy, color=color[i], width=0.2)
-
-        #ax.get_xaxis().set_ticks([])
-        #ax.get_yaxis().set_ticks([])
-        #ax.spines['top'].set_visible(False)
-        #ax.spines['right'].set_visible(False)
-        #ax.spines['bottom'].set_visible(False)
-        #ax.spines['left'].set_visible(False)
     
     def bar_plot(self, ax, data, color, labels, alpha=None):
         widths = np.asarray(data)
         starts = np.cumsum(data)
-        print(starts)
         starts = np.roll(starts, shift=1)
         starts[0] = 0
         xcenters = starts + widths / 2
@@ -181,6 +154,7 @@ class WarRoomBattleSim(toga.App):
                     height=1, 
                     alpha=alpha[i],
                     color=color[i])
+            
             ax.barh(y=0,
                     width=widths[i],
                     label=labels[i],
@@ -189,9 +163,6 @@ class WarRoomBattleSim(toga.App):
                     color='None',
                     edgecolor='black')
 
-            #for x in bar:
-            #    x.set_edgecolor('green')
-            #    x.set_linewidth(20)
 
         for (x, c, l) in (zip(xcenters, widths, labels)):
             if c > 0:
@@ -202,83 +173,80 @@ class WarRoomBattleSim(toga.App):
                             f"{(c*100):.0f}% - {l}", 
                             ha='center', 
                             va='center')
+
+        ax.get_xaxis().set_ticks([])
+        ax.get_yaxis().set_ticks([])
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+
         return ax
 
 
     def draw_chart(self, chart, figure, *args, **kwargs):
-        units_a = np.asarray(self.get_land(self.land, 'A'))
-        units_b = np.asarray(self.get_land(self.land, 'B'))
-        n_a = (units_a>0).sum()
-        n_b = (units_b>0).sum()
-        N = 1
-        N = N + 2 + n_a + n_b if self.stats_a_ground is not None else N
 
+        if self.battle_switch.value == False:
+            units_a = np.asarray(self.get_land(self.land, 'A'))
+            units_a_air = np.asarray(self.get_air(self.land, 'A'))
+            units_b = np.asarray(self.get_land(self.land, 'B'))
+            units_b_air = np.asarray(self.get_air(self.land, 'B'))
+        else:
+            units_a = np.asarray(self.get_land(self.sea, 'A'))
+            units_a_air = np.asarray(self.get_air(self.sea, 'A'))
+            units_b = np.asarray(self.get_land(self.sea, 'B'))
+            units_b_air = np.asarray(self.get_air(self.sea, 'B'))
+
+        n_a = (units_a>0).sum() 
+        n_aair =(units_a_air>0).sum()
+        n_b = (units_b>0).sum() 
+        n_bair = (units_b_air>0).sum()
+        N = 1
+        N = N + 2 + n_a + n_b + n_aair + n_bair if self.stats_a_ground is not None else N
+ 
         if self.win_loss_dist is not None:
             # using the normal matplotlib API
             ax = figure.add_subplot(N,1,1)
             labels = ['A won', 'B won', 'Draw', 'MA']
             color  = ['red', 'blue', 'gray', 'black']
-
             ax = self.bar_plot(ax, self.win_loss_dist, color, labels)
-
-            #ax.legend(ncol=len(labels), 
-            #                bbox_to_anchor=(0.5, 1.1),
-            #                #loc='left center', 
-            #                fontsize='small')
-            ax.get_xaxis().set_ticks([])
-            ax.get_yaxis().set_ticks([])
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['bottom'].set_visible(False)
-            ax.spines['left'].set_visible(False)
-        
+     
         if self.stats_a_ground is not None:
             color = ['#f1c615', '#4c74ed', '#3fa750', '#d72c32', 'white']
             idx_a = list(np.argwhere(units_a>0)[:,0])
             idx_b = list(np.argwhere(units_b>0)[:,0])
-            
+            idx_a_air = list(np.argwhere(units_a_air>0)[:,0])
+            idx_b_air = list(np.argwhere(units_b_air>0)[:,0])
+
             for img_idx, i in enumerate(idx_a): 
- 
-                ax = figure.add_subplot(N,1,img_idx+3)
+                ax = figure.add_subplot(N, 1, img_idx+3)
                 stats = self.stats_a_ground[i]
-                
                 color_units = [color[i]] * len(stats[0])
                 alpha = [a for a in stats[1]]
-
-                self.bar_plot(ax,
-                            stats[1], 
-                            color_units, 
-                            stats[0],
-                            alpha)
-                ax.get_xaxis().set_ticks([])
-                ax.get_yaxis().set_ticks([])
-                ax.spines['top'].set_visible(False)
-                ax.spines['right'].set_visible(False)
-                ax.spines['bottom'].set_visible(False)
-                ax.spines['left'].set_visible(False)
+                self.bar_plot(ax, stats[1], color_units, stats[0], alpha)
         
-
+            for img_idx, i in enumerate(idx_a_air): 
+                ax = figure.add_subplot(N,1,img_idx+n_a+3)
+                stats = self.stats_a_air[i]
+                color_units = [color[i]] * len(stats[0])
+                alpha = [a for a in stats[1]]
+                self.bar_plot(ax, stats[1], color_units, stats[0], alpha)
+ 
             for img_idx, i in enumerate(idx_b): 
-                ax = figure.add_subplot(N,1,img_idx + 4 + n_a)
+                ax = figure.add_subplot(N,1,img_idx + 4 + n_a + n_aair)
                 stats = self.stats_b_ground[i]
-                
                 color_units = [color[i]] * len(stats[0])
                 alpha = [a for a in stats[1]]
-                self.bar_plot(ax,
-                            stats[1], 
-                            color_units, 
-                            stats[0], 
-                            alpha)
-                ax.get_xaxis().set_ticks([])
-                ax.get_yaxis().set_ticks([])
-                ax.spines['top'].set_visible(False)
-                ax.spines['right'].set_visible(False)
-                ax.spines['bottom'].set_visible(False)
-                ax.spines['left'].set_visible(False)
-        
+                self.bar_plot(ax, stats[1], color_units, stats[0], alpha)
           
-
-        figure.tight_layout()
+            for img_idx, i in enumerate(idx_b_air): 
+                ax = figure.add_subplot(N,1,img_idx + 4 + n_a + n_aair + n_b)
+                stats = self.stats_b_air[i]
+                color_units = [color[i]] * len(stats[0])
+                alpha = [a for a in stats[1]]
+                self.bar_plot(ax, stats[1], color_units, stats[0], alpha)
+          
+        #figure.tight_layout()
 
 
     def reset_units(self):
@@ -400,6 +368,7 @@ class WarRoomBattleSim(toga.App):
                 ARMIES[army].apply_stance(stance_land = self.get_stances(self.land, army, 'land'),
                                             stance_air = self.get_stances(self.land, army, 'air'),
                                             stance_sea = [NO_UNIT,      NO_UNIT])
+
         else:
             for army in ['A', 'B']:
                 ARMIES[army] = Army(units_land = NO_UNIT,
