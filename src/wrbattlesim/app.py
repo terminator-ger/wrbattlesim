@@ -8,6 +8,7 @@ import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
 from toga.constants import BLUE, RED
+import toga_chart
 import functools
 import contextvars
 
@@ -38,26 +39,27 @@ class WarRoomBattleSim(toga.App):
         self.config = wr20_vaniilla_options
         self.todo = None
 
-        #self.q_in = Queue()
-        #self.q_out= Queue()
-        #self.q_int= Queue()
-
-        '''
-        self.sim_proc = ap.AioProcess(target=start_sim, 
-                                        args=(self.q_out, 
-                                              self.q_in))
-        '''
-
-        #self.sim_proc = threading.Thread(target=start_sim,
-        #                                args=(self.q_out, 
-        #                                      self.q_in, 
-        #                                      self.q_int))
-        #self.sim_proc.start()
-
         self.sim = Simulate(army_a=None, army_b=None)
 
         self.on_exit = ()#self.join_on_exit
         self.is_calculating = False
+
+        self.has_intermediate_results = False
+        self.win_loss_dist = None
+        self.has_final_results = False
+        self.final_results = {}
+        self.stats_a_ground = None
+        self.stats_b_ground = None
+        self.stats_a_air = None
+        self.stats_b_air = None
+
+        self.units_a_ground = None
+        self.units_b_ground = None
+        self.units_a_air = None
+        self.units_b_air = None
+        self.win_loss_dist = None
+
+
 
     def startup(self):
         """
@@ -98,11 +100,8 @@ class WarRoomBattleSim(toga.App):
 
 
         self.results = toga.Label("Battle Results", style=Pack(font_family='monospace'))
-        self.battle_results = toga.ScrollContainer(content=self.results, style=Pack(flex=0.5))
-        #self.battle_results = toga.Box(children=[self.results],
-        #                                style=Pack(flex=0.5))
-        #self.ui_lower = toga.ScrollContainer(style=Pack(flex=0.5), content=self.battle_results) 
-
+        #self.battle_results = toga.ScrollContainer(content=self.results, 
+                                                    #style=Pack(flex=0.5))
 
         self.ui_upper = toga.ScrollContainer(content=toga.Box(children=[self.ctrl,
                                                             self.units_box_scroll],
@@ -111,10 +110,18 @@ class WarRoomBattleSim(toga.App):
                                                     vertical = True,
                                                     style=Pack(flex=0.5))
                 
+                                                
+        self.chart = toga_chart.Chart(style=Pack(flex=1),
+                                        on_draw=self.draw_chart) 
+
+        self.battle_results = toga.ScrollContainer(content=self.chart, 
+                                                    style=Pack(flex=0.5))
+        self.battle_results.MIN_HEIGHT = 200
         self.ui_lower = toga.Box(style=Pack(direction=COLUMN, flex=0.5), 
                                     children=[self.spinner, 
                                                 self.calc_btn, 
-                                                self.battle_results]) 
+                                                self.battle_results])
+
 
         self.main_box = toga.Box(children=[self.ui_upper, self.ui_lower],
                                     style=Pack(direction=COLUMN))
@@ -122,6 +129,156 @@ class WarRoomBattleSim(toga.App):
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.main_window.content = self.main_box
         self.main_window.show()
+
+    def update_plot(self, app):
+        while True:
+            print('redraw')
+            self.chart.redraw()
+            yield 1
+
+    def unit_plot(self, ax, units, units_air):
+        color = ['#f1c615', '#4c74ed', '#3fa750', '#d72c32', 'white']
+        for i, (x, y) in enumerate(units):
+            if i < 4:
+                ax.plot(x,y, color=color[i])
+                d = np.zeros(len(y))
+                ax.fill_between(x, y, 
+                                where=y>=d, 
+                                interpolate=True, 
+                                color=color[i],
+                                alpha=0.5)
+        #ax.get_xaxis().set_ticks(np.arange(max(x), dtype=int))
+            #if i < 4:
+            #    for xx,yy in zip(x,y):
+            #        print(f"{x} {y} {i}")
+            #        ax.bar(xx,yy, color=color[i], width=0.2)
+
+        #for i, (x, y) in enumerate(units_air):
+        #    for xx,yy in zip(x,y):
+        #        ax.bar(xx+3,yy, color=color[i], width=0.2)
+
+        #ax.get_xaxis().set_ticks([])
+        #ax.get_yaxis().set_ticks([])
+        #ax.spines['top'].set_visible(False)
+        #ax.spines['right'].set_visible(False)
+        #ax.spines['bottom'].set_visible(False)
+        #ax.spines['left'].set_visible(False)
+    
+    def bar_plot(self, ax, data, color, labels, alpha=None):
+        widths = np.asarray(data)
+        starts = np.cumsum(data)
+        print(starts)
+        starts = np.roll(starts, shift=1)
+        starts[0] = 0
+        xcenters = starts + widths / 2
+        if alpha is None:
+            alpha = [1] * len(widths)
+        for i in range(len(widths)):
+            ax.barh(y=0,
+                    width=widths[i], 
+                    label=labels[i],
+                    left=starts[i], 
+                    height=1, 
+                    alpha=alpha[i],
+                    color=color[i])
+            ax.barh(y=0,
+                    width=widths[i],
+                    label=labels[i],
+                    left=starts[i], 
+                    height=1, 
+                    color='None',
+                    edgecolor='black')
+
+            #for x in bar:
+            #    x.set_edgecolor('green')
+            #    x.set_linewidth(20)
+
+        for (x, c, l) in (zip(xcenters, widths, labels)):
+            if c > 0:
+                if not isinstance(l, str):
+                    l = f"{int(l)}"
+                if c > 0.1:
+                    ax.text(x, 0, 
+                            f"{(c*100):.0f}% - {l}", 
+                            ha='center', 
+                            va='center')
+        return ax
+
+
+    def draw_chart(self, chart, figure, *args, **kwargs):
+        units_a = np.asarray(self.get_land(self.land, 'A'))
+        units_b = np.asarray(self.get_land(self.land, 'B'))
+        n_a = (units_a>0).sum()
+        n_b = (units_b>0).sum()
+        N = 1
+        N = N + 2 + n_a + n_b if self.stats_a_ground is not None else N
+
+        if self.win_loss_dist is not None:
+            # using the normal matplotlib API
+            ax = figure.add_subplot(N,1,1)
+            labels = ['A won', 'B won', 'Draw', 'MA']
+            color  = ['red', 'blue', 'gray', 'black']
+
+            ax = self.bar_plot(ax, self.win_loss_dist, color, labels)
+
+            #ax.legend(ncol=len(labels), 
+            #                bbox_to_anchor=(0.5, 1.1),
+            #                #loc='left center', 
+            #                fontsize='small')
+            ax.get_xaxis().set_ticks([])
+            ax.get_yaxis().set_ticks([])
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+        
+        if self.stats_a_ground is not None:
+            color = ['#f1c615', '#4c74ed', '#3fa750', '#d72c32', 'white']
+            idx_a = list(np.argwhere(units_a>0)[:,0])
+            idx_b = list(np.argwhere(units_b>0)[:,0])
+            
+            for img_idx, i in enumerate(idx_a): 
+ 
+                ax = figure.add_subplot(N,1,img_idx+3)
+                stats = self.stats_a_ground[i]
+                
+                color_units = [color[i]] * len(stats[0])
+                alpha = [a for a in stats[1]]
+
+                self.bar_plot(ax,
+                            stats[1], 
+                            color_units, 
+                            stats[0],
+                            alpha)
+                ax.get_xaxis().set_ticks([])
+                ax.get_yaxis().set_ticks([])
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+        
+
+            for img_idx, i in enumerate(idx_b): 
+                ax = figure.add_subplot(N,1,img_idx + 4 + n_a)
+                stats = self.stats_b_ground[i]
+                
+                color_units = [color[i]] * len(stats[0])
+                alpha = [a for a in stats[1]]
+                self.bar_plot(ax,
+                            stats[1], 
+                            color_units, 
+                            stats[0], 
+                            alpha)
+                ax.get_xaxis().set_ticks([])
+                ax.get_yaxis().set_ticks([])
+                ax.spines['top'].set_visible(False)
+                ax.spines['right'].set_visible(False)
+                ax.spines['bottom'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+        
+          
+
+        figure.tight_layout()
 
 
     def reset_units(self):
@@ -257,7 +414,14 @@ class WarRoomBattleSim(toga.App):
         unit_count_a = np.array([ARMIES['A'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
         unit_count_b = np.array([ARMIES['B'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
 
+ 
         self.spinner.start()
+        self.units_a_ground = None
+        self.units_b_ground = None
+        self.units_a_air = None
+        self.units_b_air = None
+        self.win_loss_dist = None
+
         if unit_count_a > 0 and unit_count_b > 0:
             self.add_background_task(Simulate(ARMIES['A'], 
                                               ARMIES['B'],
@@ -291,27 +455,6 @@ class WarRoomBattleSim(toga.App):
                     yield 0.01
             yield 0.1
 
-
-
-    def eval(self, app):
-        while True:
-            if self.q_in.empty():
-                if not self.q_int.empty():
-                    msg = self.q_int.get()
-                    if self.is_calculating:
-                        self.results.text = msg
-                yield 0.1
-            else:
-                msg = self.q_in.get()
-                print('finished simulation')
-                #self.battle_results.remove(self.results)
-                self.is_calculating = False
-                self.results.text = msg
-                self.spinner.stop()
-                self.spinner.refresh()
-                #self.battle_results.add(self.results)
-
-                yield 0.1
 
 
 def main():
