@@ -22,7 +22,9 @@ test_sources = [
 
 requires = [
     "wrdice",
-    "aioprocessing"
+    "aioprocessing",
+    "toga-chart",
+    "pygobject"
 ]
 test_requires = [
     "pytest",
