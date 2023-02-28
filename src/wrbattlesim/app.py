@@ -102,7 +102,7 @@ class WarRoomBattleSim(toga.App):
 
 
 
-        self.results = toga.Label("Battle Results", style=Pack(font_family='monospace'))
+        #self.results = toga.Label("Battle Results", style=Pack(font_family='monospace'))
         #self.battle_results = toga.ScrollContainer(content=self.results, 
                                                     #style=Pack(flex=0.5))
 
@@ -136,7 +136,7 @@ class WarRoomBattleSim(toga.App):
 
     def update_plot(self, app):
         while True:
-            print('redraw')
+            #print('redraw')
             self.chart.redraw()
             yield 1
 
@@ -227,13 +227,13 @@ class WarRoomBattleSim(toga.App):
             units_b = np.asarray(self.get_land(self.sea, 'B'))
             units_b_air = np.asarray(self.get_air(self.sea, 'B'))
 
-        n_a = (units_a>0).sum() 
-        n_aair =(units_a_air>0).sum()
-        n_b = (units_b>0).sum() 
-        n_bair = (units_b_air>0).sum()
-        N = 3
+        n_a = np.any(units_a>0).sum() 
+        n_aair = np.any(units_a_air>0).sum()
+        n_b = np.any(units_b>0).sum() 
+        n_bair = np.any(units_b_air>0).sum()
+        N = 1 if self.stats_a_ground is None else 1 + n_a + n_aair + n_b + n_bair
         #N = N + 2 + n_a + n_b + n_aair + n_bair if self.stats_a_ground is not None else N
-        plt.clf()
+        plt.close() 
         fig, axs = plt.subplots(N)
         plt_idx = 0 
 
@@ -242,9 +242,9 @@ class WarRoomBattleSim(toga.App):
             #ax = figure.add_subplot(N,1,1)
             labels = ['A won', 'B won', 'Draw', 'MA']
             color  = ['red', 'blue', 'gray', 'black']
-            #ax = axs[plt_idx]# if not isinstance(axs, matplotlib.axes.Axes) else axs
+            ax = axs[plt_idx] if not isinstance(axs, matplotlib.axes.Axes) else axs
 
-            ax = self.bar_plot(axs[0], self.win_loss_dist, color, labels, y=0)
+            ax = self.bar_plot(ax, self.win_loss_dist, color, labels, y=0)
 
      
         if self.stats_a_ground is not None:
@@ -253,34 +253,41 @@ class WarRoomBattleSim(toga.App):
             idx_b = list(np.argwhere(units_b>0)[:,0])
             idx_a_air = list(np.argwhere(units_a_air>0)[:,0])
             idx_b_air = list(np.argwhere(units_b_air>0)[:,0])
+            axs_idx = 1
 
             for img_idx, i in enumerate(idx_a): 
                 #ax = figure.add_subplot(N, 1, img_idx+3)
                 stats = self.stats_a_ground[i]
                 color_units = [color[i]] * len(stats[0])
                 alpha = [a for a in stats[1]]
-                self.bar_plot(axs[1], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+
+            axs_idx = axs_idx + 1 if n_a > 0 else axs_idx
         
             for img_idx, i in enumerate(idx_a_air): 
                 #ax = figure.add_subplot(N,1,img_idx+n_a+3)
                 stats = self.stats_a_air[i]
                 color_units = [color[i]] * len(stats[0])
                 alpha = [a for a in stats[1]]
-                self.bar_plot(axs[1], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+            
+            axs_idx = axs_idx + 1 if n_aair > 0 else axs_idx
  
             for img_idx, i in enumerate(idx_b): 
                 #ax = figure.add_subplot(N,1,img_idx + 4 + n_a + n_aair)
                 stats = self.stats_b_ground[i]
                 color_units = [color[i]] * len(stats[0])
                 alpha = [a for a in stats[1]]
-                self.bar_plot(axs[2], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
-          
+                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+            
+            axs_idx = axs_idx + 1 if n_b > 0 else axs_idx
+            
             for img_idx, i in enumerate(idx_b_air): 
                 #ax = figure.add_subplot(N,1,img_idx + 4 + n_a + n_aair + n_b)
                 stats = self.stats_b_air[i]
                 color_units = [color[i]] * len(stats[0])
                 alpha = [a for a in stats[1]]
-                self.bar_plot(axs[2], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
 
 
         fig.tight_layout()
@@ -388,7 +395,7 @@ class WarRoomBattleSim(toga.App):
             stances_def.append(0)
             stances_off.append(0)
  
-        print(f'Stances for {army} - {type} : {stances_def}{stances_off}')
+        #print(f'Stances for {army} - {type} : {stances_def}{stances_off}')
         return [stances_def, stances_off]
 
     def calc(self, btn):
@@ -450,13 +457,13 @@ class WarRoomBattleSim(toga.App):
             if self.todo is not None:
                 ret = True
                 while ret:
-                    print('new battle')
+                    #print('new battle')
                     ARMIES = self.todo
                     ret, p = asyncio.run(self.sim.run_async(combat_system=CombatSystem.WarRoomV2,
                                         config=self.config,
                                         armyA=ARMIES['A'],
                                         armyB=ARMIES['B']))
-                    print(p)
+                    #print(p)
                     self.spinner.value = p
                     if ret:
                         self.spinner.start()
