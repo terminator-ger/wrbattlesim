@@ -31,6 +31,7 @@ import io
 import threading
 import functools
 from queue import Queue
+import matplotlib.gridspec as gridspec
 
 
 
@@ -61,6 +62,7 @@ class WarRoomBattleSim(toga.App):
         self.units_a_air = None
         self.units_b_air = None
         self.win_loss_dist = None
+        self.ARMIES = {}
 
 
 
@@ -87,37 +89,30 @@ class WarRoomBattleSim(toga.App):
                              children = [self.battle_switch, self.batch_cap_switch])
 
         # Units
-        self.land = LandBattle() 
-        self.sea = SeaBattle() 
+        self.land = LandBattle(self) 
+        self.sea = SeaBattle(self) 
         self.units_box = toga.Box(style=Pack(flex=0.8), children=[self.land])        
-        self.units_box_scroll = toga.Box(children=[self.units_box])
 
         # Calc btn
         self.calc_btn = toga.Button("Calculate",
                                  on_press=self.calc)
-                                 #style=Pack(flex=0.1))
 
 
         self.spinner = toga.ProgressBar(max=100, running=False)
-
-
-
-        #self.results = toga.Label("Battle Results", style=Pack(font_family='monospace'))
-        #self.battle_results = toga.ScrollContainer(content=self.results, 
-                                                    #style=Pack(flex=0.5))
-
+       
         self.ui_upper = toga.ScrollContainer(content=toga.Box(children=[self.ctrl,
-                                                            self.units_box_scroll],
+                                                            self.units_box],
                                                     style=Pack(direction=COLUMN)),
                                                     horizontal = False,
                                                     vertical = True,
-                                                    style=Pack(flex=0.5))
-                
+                                                    style=Pack(flex=0.5))        
                
         self.chart = toga.ImageView(style=Pack(flex=1))                                 
 
         self.battle_results = toga.ScrollContainer(content=self.chart, 
                                                     style=Pack(flex=0.5))
+       
+        
         self.battle_results.MIN_HEIGHT = 200
         self.ui_lower = toga.Box(style=Pack(direction=COLUMN, flex=0.5), 
                                     children=[self.spinner, 
@@ -130,53 +125,29 @@ class WarRoomBattleSim(toga.App):
 
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.main_window.content = self.main_box
+        self.update_armries()
         self.main_window.show()
 
 
-
-    def update_plot(self, app):
-        while True:
-            #print('redraw')
-            self.chart.redraw()
-            yield 1
-
-    def unit_plot(self, ax, units, units_air):
-        color = ['#f1c615', '#4c74ed', '#3fa750', '#d72c32', 'white']
-        for i, (x, y) in enumerate(units):
-            if i < 4:
-                ax.plot(x,y, color=color[i])
-                d = np.zeros(len(y))
-                ax.fill_between(x, y, 
-                                where=y>=d, 
-                                interpolate=True, 
-                                color=color[i],
-                                alpha=0.5)
-        #ax.get_xaxis().set_ticks(np.arange(max(x), dtype=int))
-            #if i < 4:
-            #    for xx,yy in zip(x,y):
-            #        print(f"{x} {y} {i}")
-            #        ax.bar(xx,yy, color=color[i], width=0.2)
-
-        #for i, (x, y) in enumerate(units_air):
-        #    for xx,yy in zip(x,y):
-        #        ax.bar(xx+3,yy, color=color[i], width=0.2)
-
-        #ax.get_xaxis().set_ticks([])
-        #ax.get_yaxis().set_ticks([])
-        #ax.spines['top'].set_visible(False)
-        #ax.spines['right'].set_visible(False)
-        #ax.spines['bottom'].set_visible(False)
-        #ax.spines['left'].set_visible(False)
-
     def bar_plot(self, ax, data, color, labels, y=0, alpha=None):
+        data = np.append(data, 0)
         widths = np.asarray(data)
         starts = np.cumsum(data)
         starts = np.roll(starts, shift=1)
         starts[0] = 0
+        starts[-1]=1
         xcenters = starts + widths / 2
+        labels = np.append(labels, 0)
+
         if alpha is None:
             alpha = [1] * len(widths)
+
+        alpha.append(0)
+        color.append('black')
+        #print(f"widths: {widths}")
+        #print(f"starts: {starts}")
         for i in range(len(widths)):
+            #print(widths[i])
             ax.barh(y=y,
                     width=widths[i], 
                     label=labels[i],
@@ -202,7 +173,8 @@ class WarRoomBattleSim(toga.App):
                     ax.text(x, y, 
                             f"{(c*100):.0f}% - {l}", 
                             ha='center', 
-                            va='center')
+                            va='center',
+                            fontsize='x-large')
 
         ax.get_xaxis().set_ticks([])
         ax.get_yaxis().set_ticks([])
@@ -210,8 +182,12 @@ class WarRoomBattleSim(toga.App):
         ax.spines['right'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
         ax.spines['left'].set_visible(False)
+        #ax.set_aspect('auto', anchor='E')
 
         return ax
+
+    def rescale_alpha(self, arr, rmin=0, rmax=1, tmin=0.5, tmax=1):
+        return [(x-rmin)/(rmax-rmin) * (tmax-tmin) + tmin for x in arr]
 
 
     def draw_chart(self):
@@ -222,9 +198,9 @@ class WarRoomBattleSim(toga.App):
             units_b = np.asarray(self.get_land(self.land, 'B'))
             units_b_air = np.asarray(self.get_air(self.land, 'B'))
         else:
-            units_a = np.asarray(self.get_land(self.sea, 'A'))
+            units_a = np.asarray(self.get_sea(self.sea, 'A'))
             units_a_air = np.asarray(self.get_air(self.sea, 'A'))
-            units_b = np.asarray(self.get_land(self.sea, 'B'))
+            units_b = np.asarray(self.get_sea(self.sea, 'B'))
             units_b_air = np.asarray(self.get_air(self.sea, 'B'))
 
         n_a = np.any(units_a>0).sum() 
@@ -234,7 +210,14 @@ class WarRoomBattleSim(toga.App):
         N = 1 if self.stats_a_ground is None else 1 + n_a + n_aair + n_b + n_bair
         #N = N + 2 + n_a + n_b + n_aair + n_bair if self.stats_a_ground is not None else N
         plt.close() 
-        fig, axs = plt.subplots(N)
+        #fig, axs = plt.subplots(N)
+        #my_dpi = self.main_window.dpi
+        #width,height = self.main_window.size
+        #plt.figure(figsize=(width/my_dpi, 800/my_dpi), dpi=my_dpi)
+        plt.figure()
+        #plt.figure(figsize = (16,4))
+        gs1 = gridspec.GridSpec(N,1)
+        gs1.update(wspace=0.05, hspace=0.05)
         plt_idx = 0 
 
         if self.win_loss_dist is not None:
@@ -242,11 +225,10 @@ class WarRoomBattleSim(toga.App):
             #ax = figure.add_subplot(N,1,1)
             labels = ['A won', 'B won', 'Draw', 'MA']
             color  = ['red', 'blue', 'gray', 'black']
-            ax = axs[plt_idx] if not isinstance(axs, matplotlib.axes.Axes) else axs
-
+            #ax = axs[plt_idx] if not isinstance(axs, matplotlib.axes.Axes) else axs
+            ax = plt.subplot(gs1[plt_idx])
             ax = self.bar_plot(ax, self.win_loss_dist, color, labels, y=0)
 
-     
         if self.stats_a_ground is not None:
             color = ['#f1c615', '#4c74ed', '#3fa750', '#d72c32', 'white']
             idx_a = list(np.argwhere(units_a>0)[:,0])
@@ -259,8 +241,10 @@ class WarRoomBattleSim(toga.App):
                 #ax = figure.add_subplot(N, 1, img_idx+3)
                 stats = self.stats_a_ground[i]
                 color_units = [color[i]] * len(stats[0])
-                alpha = [a for a in stats[1]]
-                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                alpha = self.rescale_alpha([a for a in stats[1]])
+                ax = plt.subplot(gs1[axs_idx])
+                self.bar_plot(ax, stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                ax.set_facecolor('indianred')
 
             axs_idx = axs_idx + 1 if n_a > 0 else axs_idx
         
@@ -268,8 +252,10 @@ class WarRoomBattleSim(toga.App):
                 #ax = figure.add_subplot(N,1,img_idx+n_a+3)
                 stats = self.stats_a_air[i]
                 color_units = [color[i]] * len(stats[0])
-                alpha = [a for a in stats[1]]
-                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                alpha = self.rescale_alpha([a for a in stats[1]])
+                ax = plt.subplot(gs1[axs_idx])
+                self.bar_plot(ax, stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                ax.set_facecolor('indianred')
             
             axs_idx = axs_idx + 1 if n_aair > 0 else axs_idx
  
@@ -277,8 +263,10 @@ class WarRoomBattleSim(toga.App):
                 #ax = figure.add_subplot(N,1,img_idx + 4 + n_a + n_aair)
                 stats = self.stats_b_ground[i]
                 color_units = [color[i]] * len(stats[0])
-                alpha = [a for a in stats[1]]
-                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                alpha = self.rescale_alpha([a for a in stats[1]])
+                ax = plt.subplot(gs1[axs_idx])
+                self.bar_plot(ax, stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                ax.set_facecolor('cornflowerblue')
             
             axs_idx = axs_idx + 1 if n_b > 0 else axs_idx
             
@@ -286,13 +274,15 @@ class WarRoomBattleSim(toga.App):
                 #ax = figure.add_subplot(N,1,img_idx + 4 + n_a + n_aair + n_b)
                 stats = self.stats_b_air[i]
                 color_units = [color[i]] * len(stats[0])
-                alpha = [a for a in stats[1]]
-                self.bar_plot(axs[axs_idx], stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                alpha = self.rescale_alpha([a for a in stats[1]])
+                ax = plt.subplot(gs1[axs_idx])
+                self.bar_plot(ax, stats[1], color_units, stats[0], y=img_idx, alpha=alpha)
+                ax.set_facecolor('cornflowerblue')
 
-
-        fig.tight_layout()
+        #fig.subplots_adjust(wspace=0, hspace=0)
+        #fig.tight_layout()
         f = io.BytesIO()
-        plt.savefig(f, format="png")
+        plt.savefig(f, format="png", bbox_inches='tight')#, transparent=True)
         self.chart.image = toga.images.Image(data=f.getvalue())
 
 
@@ -329,8 +319,8 @@ class WarRoomBattleSim(toga.App):
         self.units_box.refresh()
         self.ui_upper.refresh()
         self.ui_upper.refresh_sublayouts()
-        self.units_box_scroll.refresh_sublayouts()
-        self.units_box_scroll.refresh()
+        #self.units_box_scroll.refresh_sublayouts()
+        #self.units_box_scroll.refresh()
         self.main_box.refresh()
         self.main_box.refresh_sublayouts()
  
@@ -398,36 +388,77 @@ class WarRoomBattleSim(toga.App):
         #print(f'Stances for {army} - {type} : {stances_def}{stances_off}')
         return [stances_def, stances_off]
 
-    def calc(self, btn):
+    def update_armries(self):
         NO_UNIT = [0,0,0,0,0]
         ALL_UNITS = [-1,-1,-1,-1,-1]
 
-        ARMIES = {}
         self.is_calculating = True
 
         if self.battle_switch.value == False:
             for army in ['A', 'B']:
-                ARMIES[army] = Army(units_land = self.get_land(self.land, army),
+                self.ARMIES[army] = Army(units_land = self.get_land(self.land, army),
                             units_air =  self.get_air(self.land, army),
                             units_sea =  NO_UNIT,
                             options = self.config)
 
-                ARMIES[army].apply_stance(stance_land = self.get_stances(self.land, army, 'land'),
+                self.ARMIES[army].apply_stance(stance_land = self.get_stances(self.land, army, 'land'),
                                             stance_air = self.get_stances(self.land, army, 'air'),
                                             stance_sea = [NO_UNIT,      NO_UNIT])
+            self.land.info_red.update(self.ARMIES['A'].n_dice_air, 
+                                         self.ARMIES['A'].n_dice_ground)
+            self.land.info_blue.update(self.ARMIES['B'].n_dice_air, 
+                                         self.ARMIES['B'].n_dice_ground)
+
+
         else:
             for army in ['A', 'B']:
-                ARMIES[army] = Army(units_land = NO_UNIT,
+                self.ARMIES[army] = Army(units_land = NO_UNIT,
                             units_air =  self.get_air(self.sea, army),
                             units_sea =  self.get_sea(self.sea, army),
                             options = self.config)
 
-                ARMIES[army].apply_stance(stance_land = [NO_UNIT,  NO_UNIT],
+                self.ARMIES[army].apply_stance(stance_land = [NO_UNIT,  NO_UNIT],
                                         stance_air = self.get_stances(self.sea, army, 'air'),
                                         stance_sea = self.get_stances(self.sea, army, 'sea'))
+            self.sea.info_red.update(self.ARMIES['A'].n_dice_air, 
+                                         self.ARMIES['A'].n_dice_ground)
+            self.sea.info_blue.update(self.ARMIES['B'].n_dice_air, 
+                                         self.ARMIES['B'].n_dice_ground)
 
-        unit_count_a = np.array([ARMIES['A'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
-        unit_count_b = np.array([ARMIES['B'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
+
+
+
+    def calc(self, btn):
+        self.update_armries()
+        #NO_UNIT = [0,0,0,0,0]
+        #ALL_UNITS = [-1,-1,-1,-1,-1]
+
+        #ARMIES = {}
+        #self.is_calculating = True
+
+        #if self.battle_switch.value == False:
+        #    for army in ['A', 'B']:
+        #        ARMIES[army] = Army(units_land = self.get_land(self.land, army),
+        #                    units_air =  self.get_air(self.land, army),
+        #                    units_sea =  NO_UNIT,
+        #                    options = self.config)
+
+        #        ARMIES[army].apply_stance(stance_land = self.get_stances(self.land, army, 'land'),
+        #                                    stance_air = self.get_stances(self.land, army, 'air'),
+        #                                    stance_sea = [NO_UNIT,      NO_UNIT])
+        #else:
+        #    for army in ['A', 'B']:
+        #        ARMIES[army] = Army(units_land = NO_UNIT,
+        #                    units_air =  self.get_air(self.sea, army),
+        #                    units_sea =  self.get_sea(self.sea, army),
+        #                    options = self.config)
+
+        #        ARMIES[army].apply_stance(stance_land = [NO_UNIT,  NO_UNIT],
+        #                                stance_air = self.get_stances(self.sea, army, 'air'),
+        #                                stance_sea = self.get_stances(self.sea, army, 'sea'))
+
+        unit_count_a = np.array([self.ARMIES['A'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
+        unit_count_b = np.array([self.ARMIES['B'].units[type].sum() for type in ['land', 'sea', 'air']]).sum()
 
  
         self.spinner.start()
@@ -442,8 +473,8 @@ class WarRoomBattleSim(toga.App):
         self.stats_b_ground = None
 
         if unit_count_a > 0 and unit_count_b > 0:
-            self.add_background_task(Simulate(ARMIES['A'], 
-                                              ARMIES['B'],
+            self.add_background_task(Simulate(self.ARMIES['A'], 
+                                              self.ARMIES['B'],
                                               self.config,
                                               CombatSystem.WarRoomV2).run_cb) 
 
