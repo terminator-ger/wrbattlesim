@@ -8,14 +8,14 @@ from toga.constants import BLUE, RED
 from wrbattlesim.config import ROW_HEIGHT, BTN_SIZE
 
 class UnitWidget(toga.Box):
-    def __init__(self, flex, color=None, stance_desc=['Defensive', 'Offensive'], padding_bottom=0, padding_right=0):
+    def __init__(self, parent_app, flex, color=None, stance_desc=['Defensive', 'Offensive'], padding_bottom=0, padding_right=0):
         toga.Box.__init__(self, style=Pack(direction=COLUMN, 
                                             flex=flex, 
                                             height=ROW_HEIGHT,
                                             padding_left=5, 
                                             padding_right=padding_right, 
                                             padding_bottom=padding_bottom))
-
+        self.parent_app = parent_app
         self.stance_desc = stance_desc
         self.count = 0                                                
         self.counter = toga.Label('0', style=Pack(width=20, 
@@ -38,7 +38,8 @@ class UnitWidget(toga.Box):
 
         self.stance = toga.Selection(items=self.stance_desc, 
                                         style=Pack(width=140, 
-                                                    height=ROW_HEIGHT//2))
+                                                    height=ROW_HEIGHT//2),
+                                                    on_select=self.update)
 
         self.box_btn = toga.Box(children=[self.btn_down, self.counter, self.btn_up],#, self.btn_reset],
                                     style=Pack(direction=ROW, 
@@ -54,9 +55,12 @@ class UnitWidget(toga.Box):
 
         #self.add(self.box_counter)
 
+    def update(self, ref):
+        self.parent_app.update_armries()
 
     def get_value(self):
         return self.count
+    
     
     def get_stance(self):
         for i, val in enumerate(self.stance_desc):
@@ -68,12 +72,16 @@ class UnitWidget(toga.Box):
         self.count = 0
         self.counter.text = str(self.count)
 
+
     def incr(self, ref):
         self.count += 1
         self.counter.text = str(self.count)
+        self.parent_app.update_armries()
+
 
     def decr(self, ref):
         if self.count > 0:
             self.count -= 1
         self.counter.text = str(self.count)
+        self.parent_app.update_armries()
 

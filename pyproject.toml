@@ -21,6 +21,7 @@ test_sources = [
 ]
 
 requires = [
+    "matplotlib",
     "wrdice",
     "aioprocessing",
     "toga-chart"
