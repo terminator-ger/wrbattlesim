@@ -29,7 +29,8 @@ class Dice(toga.Box):
         self.fontsize = None
         cwd = pathlib.Path(__file__)
         cwd = os.path.split(cwd)[0]
-        self.fontset =  os.path.join(cwd, 'resources/Verdana.ttf')
+        self.fontset =  os.path.join(cwd, 'resources/verdana.ttf')
+        print(self.fontset)
         self.update(0)
     
     def update(self, num:int) -> None:

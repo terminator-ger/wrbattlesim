@@ -109,11 +109,7 @@ class WarRoomBattleSim(toga.App):
                
         self.chart = toga.ImageView(style=Pack(flex=1))                                 
 
-        self.battle_results = toga.ScrollContainer(content=self.chart, 
-                                                    style=Pack(flex=0.5))
-       
         
-        self.battle_results.MIN_HEIGHT = 200
         self.ui_lower = toga.Box(style=Pack(direction=COLUMN, flex=0.5), 
                                     children=[self.spinner, 
                                                 self.calc_btn, 
