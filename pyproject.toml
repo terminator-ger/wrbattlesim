@@ -24,7 +24,6 @@ requires = [
     "matplotlib",
     "wrdice",
     "aioprocessing",
-    "toga-chart"
 ]
 test_requires = [
     "pytest",
