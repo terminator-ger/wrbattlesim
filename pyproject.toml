@@ -13,6 +13,7 @@ formal_name = "WRBattleSim"
 description = "My first application"
 icon = "src/wrbattlesim/resources/wrbattlesim"
 requires-python = ">=3.8.10"
+
 sources = [
     "src/wrbattlesim",
 ]
